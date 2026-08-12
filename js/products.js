@@ -64,7 +64,7 @@ window.CATALOG_PRODUCTS = [
     "id": "p7",
     "name": "Smartphone 128GB",
     "category": "Celulares",
-    "price": 8299,
+    "price": 1299,
     "description": "Tela 6.5\", 128GB, câmera tripla, bateria 5000mAh.",
     "image": "https://images.unsplash.com/photo-1511707171634-5f897ff02aa9?auto=format&fit=crop&w=600&q=80",
     "available": true,
