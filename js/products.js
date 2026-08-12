@@ -4,7 +4,7 @@ window.CATALOG_PRODUCTS = [
     "id": "p1",
     "name": "Camiseta Básica Algodão",
     "category": "Roupas",
-    "price": 49.9,
+    "price": 149.9,
     "description": "Camiseta 100% algodão, unissex, disponível em várias cores.",
     "image": "https://images.unsplash.com/photo-1521572163474-6864f9cf17ab?auto=format&fit=crop&w=600&q=80",
     "available": true,
