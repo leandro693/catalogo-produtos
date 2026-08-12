@@ -1,0 +1,229 @@
+<!DOCTYPE html>
+<html lang="pt-BR">
+<head>
+  <meta charset="UTF-8">
+  <meta name="viewport" content="width=device-width, initial-scale=1.0">
+  <title>Administração — Catálogo</title>
+  <link rel="stylesheet" href="css/styles.css">
+  <style>
+    .admin-wrap { max-width: 900px; margin: 0 auto; padding: 16px; }
+    .admin-header {
+      background: var(--primary); color: #fff; padding: 16px;
+      display: flex; align-items: center; gap: 12px;
+    }
+    .admin-header h1 { font-size: 1.15rem; }
+    .admin-header .spacer { margin-left: auto; }
+    .admin-header a, .admin-header button {
+      color: #fff; background: rgba(255,255,255,.16);
+      border: 1px solid rgba(255,255,255,.3); border-radius: 999px;
+      padding: 8px 14px; font-weight: 600; text-decoration: none; font-size: .88rem;
+    }
+    .panel {
+      background: var(--surface); border: 1px solid var(--border);
+      border-radius: var(--radius); box-shadow: var(--shadow);
+      padding: 18px; margin-bottom: 18px;
+    }
+    .panel h2 { font-size: 1.05rem; margin-bottom: 14px; }
+    .panel h2 .hint { font-weight: 400; font-size: .82rem; color: var(--muted); display: block; margin-top: 2px; }
+    .field { margin-bottom: 12px; }
+    .field label { display: block; font-size: .85rem; font-weight: 600; margin-bottom: 5px; }
+    .field input, .field textarea, .field select {
+      width: 100%; padding: 10px 12px; border: 1px solid var(--border);
+      border-radius: 10px; font-size: .95rem; font-family: inherit; background: #fff;
+    }
+    .field input:focus, .field textarea:focus, .field select:focus { outline: 2px solid var(--primary); border-color: transparent; }
+    .field textarea { resize: vertical; min-height: 64px; }
+    .grid-2 { display: grid; grid-template-columns: 1fr 1fr; gap: 12px; }
+    .row-inline { display: flex; align-items: center; gap: 8px; }
+    .row-inline input[type=checkbox] { width: auto; }
+    .btn {
+      background: var(--primary); color: #fff; border: none;
+      border-radius: 10px; padding: 11px 18px; font-weight: 700; font-size: .95rem;
+    }
+    .btn:hover { background: var(--primary-dark); }
+    .btn.secondary { background: #eef0f6; color: var(--text); }
+    .btn.secondary:hover { background: #e2e5ef; }
+    .btn.danger { background: var(--danger); }
+    .btn.ghost { background: transparent; color: var(--primary); border: 1px solid var(--primary); }
+    .btn-row { display: flex; gap: 10px; flex-wrap: wrap; }
+    .prod-list { display: flex; flex-direction: column; gap: 10px; }
+    .prod-row {
+      display: flex; align-items: center; gap: 12px;
+      border: 1px solid var(--border); border-radius: 12px; padding: 10px;
+    }
+    .prod-row img { width: 52px; height: 52px; border-radius: 8px; object-fit: cover; background: #eef0f6; flex: 0 0 auto; }
+    .prod-row .p-info { flex: 1; min-width: 0; }
+    .prod-row .p-info strong { display: block; font-size: .95rem; white-space: nowrap; overflow: hidden; text-overflow: ellipsis; }
+    .prod-row .p-info small { color: var(--muted); }
+    .prod-row .p-actions { display: flex; gap: 6px; flex: 0 0 auto; }
+    .prod-row .p-actions button { border: 1px solid var(--border); background: #fff; border-radius: 8px; padding: 6px 10px; font-size: .82rem; font-weight: 600; }
+    .prod-row.is-out { opacity: .6; }
+    .tag-out { color: var(--danger); font-weight: 700; font-size: .78rem; }
+    .img-preview { width: 72px; height: 72px; border-radius: 10px; object-fit: cover; background: #eef0f6; margin-top: 8px; }
+    .note { font-size: .82rem; color: var(--muted); }
+    .note.warn { color: #b45309; }
+    .modal-overlay {
+      position: fixed; inset: 0; background: rgba(0,0,0,.45);
+      display: none; align-items: center; justify-content: center; z-index: 100; padding: 16px;
+    }
+    .modal-overlay.open { display: flex; }
+    .modal {
+      background: var(--surface); border-radius: var(--radius);
+      width: min(560px, 100%); max-height: 90vh; overflow-y: auto; padding: 20px;
+    }
+    .modal h3 { margin-bottom: 14px; }
+    /* Gate */
+    .gate { max-width: 360px; margin: 60px auto; text-align: center; }
+    .gate .panel { padding: 26px; }
+    .hidden { display: none !important; }
+    @media (max-width: 560px) { .grid-2 { grid-template-columns: 1fr; } }
+  </style>
+</head>
+<body>
+  <!-- Tela de senha -->
+  <div id="gate" class="gate">
+    <div class="panel">
+      <h2>Área do administrador</h2>
+      <p class="note" style="margin-bottom:14px;">Digite a senha para gerenciar o catálogo.</p>
+      <div class="field">
+        <input type="password" id="gatePass" placeholder="Senha" autocomplete="current-password">
+      </div>
+      <button class="btn" id="gateBtn" style="width:100%;">Entrar</button>
+      <p class="note" id="gateMsg" style="margin-top:10px;"></p>
+    </div>
+  </div>
+
+  <!-- App -->
+  <div id="app" class="hidden">
+    <header class="admin-header">
+      <h1>🛠️ Administração do Catálogo</h1>
+      <span class="spacer"></span>
+      <a href="index.html" target="_blank">Ver loja ↗</a>
+      <button id="logoutBtn">Sair</button>
+    </header>
+
+    <div class="admin-wrap">
+
+      <!-- Configurações da loja -->
+      <section class="panel">
+        <h2>Configurações da loja
+          <span class="hint">Nome, WhatsApp e aparência. Lembre de Publicar depois de alterar.</span>
+        </h2>
+        <div class="grid-2">
+          <div class="field">
+            <label for="cfgName">Nome da loja</label>
+            <input type="text" id="cfgName" placeholder="Minha Loja">
+          </div>
+          <div class="field">
+            <label for="cfgWhats">WhatsApp (com DDI 55)</label>
+            <input type="text" id="cfgWhats" placeholder="5511999998888" inputmode="numeric">
+          </div>
+        </div>
+        <div class="field">
+          <label for="cfgTagline">Frase do topo</label>
+          <input type="text" id="cfgTagline" placeholder="Escolha seus produtos e finalize pelo WhatsApp">
+        </div>
+        <div class="field">
+          <label for="cfgGreeting">Saudação do pedido (início da mensagem no WhatsApp)</label>
+          <input type="text" id="cfgGreeting" placeholder="Olá! Gostaria de fazer o seguinte pedido:">
+        </div>
+        <div class="grid-2">
+          <div class="field">
+            <label for="cfgColor">Cor principal</label>
+            <input type="color" id="cfgColor" value="#7c3aed" style="height:44px;padding:4px;">
+          </div>
+          <div class="field">
+            <label for="cfgLogo">Logo (URL — opcional)</label>
+            <input type="text" id="cfgLogo" placeholder="https://...">
+          </div>
+        </div>
+        <p class="note">O número do WhatsApp deve ter só dígitos: 55 (Brasil) + DDD + número. Ex.: <strong>5511987654321</strong>.</p>
+      </section>
+
+      <!-- Produtos -->
+      <section class="panel">
+        <h2>Produtos
+          <span class="hint">Adicione, edite ou remova. As alterações só vão para a loja após Publicar.</span>
+        </h2>
+        <div class="btn-row" style="margin-bottom:14px;">
+          <button class="btn" id="addProdBtn">+ Novo produto</button>
+        </div>
+        <div class="prod-list" id="prodList"></div>
+      </section>
+
+      <!-- Publicar -->
+      <section class="panel">
+        <h2>Publicar alterações
+          <span class="hint">Baixe os arquivos atualizados e substitua-os no site para publicar.</span>
+        </h2>
+        <div class="btn-row">
+          <button class="btn" id="publishBtn">⬇️ Publicar / Exportar</button>
+          <button class="btn secondary" id="importBtn">Importar arquivos</button>
+        </div>
+        <p class="note" style="margin-top:12px;">
+          Ao clicar em <strong>Publicar</strong>, dois arquivos serão baixados:
+          <strong>products.js</strong> e <strong>config.js</strong>. Substitua-os na pasta
+          <strong>js/</strong> do seu site (commit/push no GitHub) para atualizar o catálogo.
+          Veja o passo a passo no <a href="README.md" target="_blank">README</a>.
+        </p>
+        <input type="file" id="importFile" accept=".js" multiple class="hidden">
+      </section>
+
+    </div>
+  </div>
+
+  <!-- Modal produto -->
+  <div class="modal-overlay" id="prodModal">
+    <div class="modal">
+      <h3 id="modalTitle">Novo produto</h3>
+      <input type="hidden" id="fId">
+      <div class="field">
+        <label for="fName">Nome *</label>
+        <input type="text" id="fName" placeholder="Ex.: Camiseta Básica">
+      </div>
+      <div class="grid-2">
+        <div class="field">
+          <label for="fCategory">Categoria</label>
+          <input type="text" id="fCategory" list="catList" placeholder="Ex.: Roupas">
+          <datalist id="catList"></datalist>
+        </div>
+        <div class="field">
+          <label for="fPrice">Preço (R$) *</label>
+          <input type="number" id="fPrice" step="0.01" min="0" placeholder="0,00" inputmode="decimal">
+        </div>
+      </div>
+      <div class="field">
+        <label for="fDesc">Descrição</label>
+        <textarea id="fDesc" placeholder="Descrição curta do produto"></textarea>
+      </div>
+      <div class="field">
+        <label for="fImage">Imagem (cole uma URL ou envie um arquivo)</label>
+        <input type="text" id="fImage" placeholder="https://...">
+        <div class="row-inline" style="margin-top:8px;">
+          <input type="file" id="fImageFile" accept="image/*">
+        </div>
+        <img id="fImagePreview" class="img-preview hidden" alt="">
+        <p class="note warn hidden" id="imgWarn">Imagem grande — considere usar uma URL para o catálogo não ficar pesado.</p>
+      </div>
+      <div class="row-inline" style="margin-bottom:12px;">
+        <input type="checkbox" id="fAvailable" checked>
+        <label for="fAvailable" style="margin:0;">Disponível para venda</label>
+      </div>
+      <div class="row-inline" style="margin-bottom:18px;">
+        <input type="checkbox" id="fFeatured">
+        <label for="fFeatured" style="margin:0;">Produto em destaque</label>
+      </div>
+      <div class="btn-row">
+        <button class="btn" id="saveProdBtn">Salvar produto</button>
+        <button class="btn secondary" id="cancelProdBtn">Cancelar</button>
+      </div>
+    </div>
+  </div>
+
+  <div class="toast" id="toast"></div>
+
+  <script src="js/config.js"></script>
+  <script src="js/products.js"></script>
+  <script src="js/admin.js"></script>
+</body>
+</html>

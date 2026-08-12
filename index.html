@@ -1,0 +1,69 @@
+<!DOCTYPE html>
+<html lang="pt-BR">
+<head>
+  <meta charset="UTF-8">
+  <meta name="viewport" content="width=device-width, initial-scale=1.0">
+  <title>Catálogo</title>
+  <meta name="description" content="Catálogo de produtos — escolha e finalize seu pedido pelo WhatsApp.">
+  <link rel="stylesheet" href="css/styles.css">
+</head>
+<body>
+  <header class="site-header">
+    <div class="header-inner">
+      <div class="brand">
+        <img id="storeLogo" alt="" hidden>
+        <div class="brand-text">
+          <h1 id="storeName">Minha Loja</h1>
+          <p id="storeTagline">Escolha seus produtos e finalize pelo WhatsApp</p>
+        </div>
+      </div>
+      <button class="cart-button" id="openCart" aria-label="Abrir carrinho">
+        🛒 <span>Carrinho</span>
+        <span class="cart-count" id="cartCount">0</span>
+      </button>
+    </div>
+  </header>
+
+  <div class="toolbar">
+    <input type="search" class="search-box" id="search" placeholder="Buscar produto..." aria-label="Buscar produto">
+    <div class="categories" id="categories"></div>
+  </div>
+
+  <main class="products" id="products"></main>
+
+  <p class="footer-note">
+    Pedidos são enviados diretamente para o nosso WhatsApp. •
+    <a href="admin.html">Área do administrador</a>
+  </p>
+
+  <!-- Carrinho -->
+  <div class="overlay" id="overlay"></div>
+  <aside class="drawer" id="cartDrawer" aria-label="Carrinho de compras">
+    <div class="drawer-header">
+      <h2>Seu pedido</h2>
+      <button class="icon-btn" id="closeCart" aria-label="Fechar">&times;</button>
+    </div>
+    <div class="cart-items" id="cartItems"></div>
+    <div class="drawer-footer" id="cartFooter" hidden>
+      <div class="total-row">
+        <span>Total</span>
+        <span id="cartTotal">R$ 0,00</span>
+      </div>
+      <div class="checkout-fields">
+        <input type="text" id="custName" placeholder="Seu nome *" autocomplete="name">
+        <input type="tel" id="custPhone" placeholder="Seu telefone (WhatsApp)" autocomplete="tel">
+        <textarea id="custAddress" placeholder="Endereço de entrega / observações"></textarea>
+      </div>
+      <button class="whatsapp-btn" id="checkout">
+        <span>📲</span> Enviar pedido no WhatsApp
+      </button>
+    </div>
+  </aside>
+
+  <div class="toast" id="toast"></div>
+
+  <script src="js/config.js"></script>
+  <script src="js/products.js"></script>
+  <script src="js/store.js"></script>
+</body>
+</html>
