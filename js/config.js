@@ -1,6 +1,6 @@
 /* Gerado pelo painel admin. */
 window.CATALOG_CONFIG = {
-  "storeName": "Minha Loja de Testes",
+  "storeName": "Minha Loja de Teste",
   "whatsapp": "5511942722105",
   "primaryColor": "#7c3aed",
   "logo": "",
