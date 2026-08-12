@@ -169,6 +169,41 @@
         <input type="file" id="importFile" accept=".js" multiple class="hidden">
       </section>
 
+      <!-- Publicar direto no GitHub -->
+      <section class="panel">
+        <h2>Publicar direto no GitHub (opcional)
+          <span class="hint">Envie as alterações direto para o repositório, sem baixar arquivos.</span>
+        </h2>
+        <div class="grid-2">
+          <div class="field">
+            <label for="ghRepo">Repositório (usuário/repo)</label>
+            <input type="text" id="ghRepo" placeholder="leandro693/catalogo-produtos" autocomplete="off">
+          </div>
+          <div class="field">
+            <label for="ghBranch">Branch (ramo que o site usa)</label>
+            <input type="text" id="ghBranch" placeholder="main" autocomplete="off">
+          </div>
+        </div>
+        <div class="field">
+          <label for="ghToken">Token do GitHub (com permissão Contents: Read and write)</label>
+          <input type="password" id="ghToken" placeholder="github_pat_..." autocomplete="off">
+        </div>
+        <div class="row-inline" style="margin-bottom:12px;">
+          <input type="checkbox" id="ghRemember" checked>
+          <label for="ghRemember" style="margin:0;">Lembrar o token neste navegador</label>
+        </div>
+        <div class="btn-row">
+          <button class="btn" id="publishGhBtn">🚀 Publicar direto no GitHub</button>
+        </div>
+        <p class="note" id="ghStatus" style="margin-top:12px;" aria-live="polite"></p>
+        <p class="note warn" style="margin-top:8px;">
+          ⚠️ O token dá acesso de escrita ao repositório. Ele fica salvo <strong>só neste navegador</strong>
+          — nunca é enviado para o site nem gravado no catálogo. Use um <strong>token fine-grained</strong>
+          limitado a este repositório. Passo a passo de como criar no
+          <a href="GUIA.md" target="_blank">GUIA</a>.
+        </p>
+      </section>
+
     </div>
   </div>
 

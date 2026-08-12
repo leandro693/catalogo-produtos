@@ -7,6 +7,9 @@ cliente escolhe os produtos, monta o pedido e, ao finalizar, o pedido chega
 Não precisa de servidor, banco de dados nem programação. São só arquivos de site
 (HTML/CSS/JS) que podem ser publicados de graça (ex.: GitHub Pages).
 
+> 📘 **Guia rápido de uso** (incluir produtos, ajustar preços e publicar direto no
+> GitHub): veja **[GUIA.md](GUIA.md)**.
+
 ---
 
 ## 📁 O que tem no projeto

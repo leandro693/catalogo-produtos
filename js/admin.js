@@ -17,6 +17,8 @@
   var DRAFT_PRODUCTS_KEY = "catalogo_draft_products";
   var DRAFT_CONFIG_KEY = "catalogo_draft_config";
   var IMG_WARN_BYTES = 250 * 1024; // ~250 KB
+  var GH_SETTINGS_KEY = "catalogo_gh_settings"; // usuario/repo/branch (não sensível)
+  var GH_TOKEN_KEY = "catalogo_gh_token";       // token — fica SÓ neste navegador, nunca exportado
 
   function $(id) { return document.getElementById(id); }
 
@@ -333,6 +335,135 @@
     showToast("Arquivos baixados! Substitua-os na pasta js/ do site.");
   }
 
+  // ---- Publicar direto no GitHub (via API) ------------------------------
+  // O token fica só no navegador (localStorage) e NUNCA é escrito em config.js
+  // ou products.js — buildConfigFile()/buildProductsFile() só usam o objeto config.
+
+  function loadGitHubSettings() {
+    var s = safeParse(localStorage.getItem(GH_SETTINGS_KEY)) || {};
+    $("ghRepo").value = s.repo || "leandro693/catalogo-produtos";
+    $("ghBranch").value = s.branch || "";
+    var tok = "";
+    try { tok = localStorage.getItem(GH_TOKEN_KEY) || ""; } catch (e) {}
+    $("ghToken").value = tok;
+    $("ghRemember").checked = !!tok;
+  }
+
+  function saveGitHubSettings(repoFull, branch, token) {
+    try {
+      localStorage.setItem(GH_SETTINGS_KEY, JSON.stringify({ repo: repoFull, branch: branch }));
+      if ($("ghRemember").checked && token) {
+        localStorage.setItem(GH_TOKEN_KEY, token);
+      } else {
+        localStorage.removeItem(GH_TOKEN_KEY);
+      }
+    } catch (e) {}
+  }
+
+  function setGhStatus(msg, isError) {
+    var el = $("ghStatus");
+    el.textContent = msg;
+    el.classList.toggle("warn", !!isError);
+  }
+
+  // Codifica texto UTF-8 em base64 (necessário para a API do GitHub), em blocos
+  // para não estourar a pilha com arquivos grandes (imagens embutidas).
+  function utf8ToBase64(str) {
+    var bytes = new TextEncoder().encode(str);
+    var bin = "", chunk = 0x8000;
+    for (var i = 0; i < bytes.length; i += chunk) {
+      bin += String.fromCharCode.apply(null, bytes.subarray(i, i + chunk));
+    }
+    return btoa(bin);
+  }
+
+  function ghHeaders(token) {
+    return {
+      "Authorization": "Bearer " + token,
+      "Accept": "application/vnd.github+json",
+      "X-GitHub-Api-Version": "2022-11-28"
+    };
+  }
+
+  function ghErrorMessage(status, body) {
+    var m = (body && body.message) ? body.message : ("HTTP " + status);
+    if (status === 401) return "Token inválido ou expirado (401).";
+    if (status === 403) return "Sem permissão (403). O token precisa de Contents: Read and write neste repositório.";
+    if (status === 404) return "Repositório ou branch não encontrado (404). Confira usuário/repo e a branch.";
+    if (status === 409) return "Conflito (409). A branch mudou; recarregue a página e tente de novo.";
+    if (status === 422) return "Dados inválidos (422): " + m;
+    return m;
+  }
+
+  function ghGetSha(owner, repo, path, branch, token) {
+    var url = "https://api.github.com/repos/" + owner + "/" + repo + "/contents/" +
+      path + "?ref=" + encodeURIComponent(branch);
+    return fetch(url, { headers: ghHeaders(token) }).then(function (res) {
+      if (res.status === 404) return null; // arquivo ainda não existe → cria novo
+      if (!res.ok) return res.json().catch(function () { return {}; })
+        .then(function (b) { throw new Error(ghErrorMessage(res.status, b)); });
+      return res.json().then(function (j) { return j.sha; });
+    });
+  }
+
+  function ghPutFile(owner, repo, path, branch, token, contentText, sha, message) {
+    var url = "https://api.github.com/repos/" + owner + "/" + repo + "/contents/" + path;
+    var body = { message: message, content: utf8ToBase64(contentText), branch: branch };
+    if (sha) body.sha = sha;
+    return fetch(url, { method: "PUT", headers: ghHeaders(token), body: JSON.stringify(body) })
+      .then(function (res) {
+        if (!res.ok) return res.json().catch(function () { return {}; })
+          .then(function (b) { throw new Error(ghErrorMessage(res.status, b)); });
+        return res.json();
+      });
+  }
+
+  function publishToGitHub() {
+    var repoFull = $("ghRepo").value.trim()
+      .replace(/^https?:\/\/github\.com\//i, "").replace(/\.git$/i, "").replace(/\/+$/, "");
+    var parts = repoFull.split("/");
+    var owner = parts[0], repo = parts[1];
+    var branch = $("ghBranch").value.trim();
+    var token = $("ghToken").value.trim();
+
+    if (!owner || !repo) { setGhStatus("Informe o repositório no formato usuário/repo.", true); $("ghRepo").focus(); return; }
+    if (!branch) { setGhStatus("Informe a branch (ex.: main).", true); $("ghBranch").focus(); return; }
+    if (!token) { setGhStatus("Cole o token do GitHub.", true); $("ghToken").focus(); return; }
+    if (!config.whatsapp) {
+      if (!confirm("O número do WhatsApp está vazio. Os pedidos não terão para onde ir. Publicar mesmo assim?")) {
+        return;
+      }
+    }
+
+    saveGitHubSettings(repoFull, branch, token);
+
+    var files = [
+      { path: "js/config.js", text: buildConfigFile() },
+      { path: "js/products.js", text: buildProductsFile() }
+    ];
+    var btn = $("publishGhBtn");
+    btn.disabled = true;
+    setGhStatus("Enviando para o GitHub…", false);
+
+    files.reduce(function (chain, f) {
+      return chain.then(function () {
+        setGhStatus("Enviando " + f.path + "…", false);
+        return ghGetSha(owner, repo, f.path, branch, token).then(function (sha) {
+          return ghPutFile(owner, repo, f.path, branch, token, f.text, sha,
+            "Atualiza catálogo pelo painel admin (" + f.path + ")");
+        });
+      });
+    }, Promise.resolve())
+    .then(function () {
+      setGhStatus("✅ Publicado no GitHub! Se o site usa GitHub Pages, ele atualiza em ~1 minuto.", false);
+      showToast("Publicado direto no GitHub!");
+    })
+    .catch(function (err) {
+      setGhStatus("❌ " + (err && err.message ? err.message : "Falha ao publicar."), true);
+    })
+    .then(function () { btn.disabled = false; });
+  }
+
   // ---- Importar arquivos publicados -------------------------------------
   function handleImportFiles(files) {
     var arr = Array.prototype.slice.call(files);
@@ -436,6 +567,9 @@
     $("publishBtn").addEventListener("click", publish);
     $("importBtn").addEventListener("click", function () { $("importFile").click(); });
     $("importFile").addEventListener("change", function (e) { handleImportFiles(e.target.files); e.target.value = ""; });
+
+    loadGitHubSettings();
+    $("publishGhBtn").addEventListener("click", publishToGitHub);
 
     $("logoutBtn").addEventListener("click", logout);
     document.addEventListener("keydown", function (e) { if (e.key === "Escape") closeModal(); });
